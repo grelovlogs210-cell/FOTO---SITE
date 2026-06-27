@@ -14,6 +14,7 @@ import {
   type PortfolioRow,
   type ServiceRow,
   type SiteSettingsRow,
+  uploadUserAsset,
   updatePortfolio,
   updateService,
   upsertAbout,
@@ -177,6 +178,24 @@ function AdminPage() {
   const handleError = (error: unknown, fallback: string) => {
     const message = error instanceof Error ? error.message : fallback;
     setNotice({ kind: "error", message });
+  };
+
+  const handleImageUpload = async (
+    file: File | null,
+    onComplete: (storageValue: string) => void,
+    successMessage: string,
+  ) => {
+    if (!file) {
+      return;
+    }
+
+    try {
+      const upload = await uploadUserAsset(file);
+      onComplete(upload.storageValue);
+      setNotice({ kind: "success", message: successMessage });
+    } catch (error) {
+      handleError(error, "Nao foi possivel enviar a imagem.");
+    }
   };
 
   const handleGoogleLogin = async () => {
@@ -353,6 +372,17 @@ function AdminPage() {
                 }
                 placeholder="https://... ou storage:site-assets/arquivo.jpg"
               />
+              <FileField
+                label="Upload da imagem do hero"
+                onChange={(file) =>
+                  void handleImageUpload(
+                    file,
+                    (storageValue) =>
+                      setSiteSettingsForm((current) => ({ ...current, hero_image: storageValue })),
+                    "Imagem do hero enviada com sucesso.",
+                  )
+                }
+              />
             </div>
             <div className="md:col-span-2">
               <TextAreaField
@@ -385,6 +415,16 @@ function AdminPage() {
               onChange={(value) => setAboutForm((current) => ({ ...current, image_url: value }))}
               placeholder="https://... ou storage:site-assets/arquivo.jpg"
             />
+            <FileField
+              label="Upload da imagem sobre"
+              onChange={(file) =>
+                void handleImageUpload(
+                  file,
+                  (storageValue) => setAboutForm((current) => ({ ...current, image_url: storageValue })),
+                  "Imagem da secao sobre enviada com sucesso.",
+                )
+              }
+            />
             <TextAreaField
               label="Conteudo"
               value={aboutForm.content}
@@ -407,6 +447,7 @@ function AdminPage() {
           items={adminQuery.data.services}
           createEmptyItem={() => ({
             id: `new-service-${crypto.randomUUID()}`,
+            user_id: "",
             title: "",
             description: "",
           })}
@@ -462,6 +503,7 @@ function AdminPage() {
           items={adminQuery.data.portfolio}
           createEmptyItem={() => ({
             id: `new-portfolio-${crypto.randomUUID()}`,
+            user_id: "",
             title: "",
             category: "",
             image_url: "",
@@ -485,6 +527,16 @@ function AdminPage() {
                   value={item.image_url}
                   onChange={(value) => onChange({ ...item, image_url: value })}
                   placeholder="https://... ou storage:site-assets/arquivo.jpg"
+                />
+                <FileField
+                  label="Upload da imagem do projeto"
+                  onChange={(file) =>
+                    void handleImageUpload(
+                      file,
+                      (storageValue) => onChange({ ...item, image_url: storageValue }),
+                      "Imagem do projeto enviada com sucesso.",
+                    )
+                  }
                 />
               </div>
               <label className="flex items-center gap-3 rounded-2xl border border-stone-700 bg-stone-950/80 px-4 py-3 text-sm text-stone-200">
@@ -790,6 +842,26 @@ function TextAreaField({
         rows={rows}
         onChange={(event) => onChange(event.target.value)}
         className="w-full rounded-[1.5rem] border border-stone-700 bg-stone-950/80 px-4 py-3 text-sm text-stone-100 outline-none transition placeholder:text-stone-500 focus:border-amber-300"
+      />
+    </label>
+  );
+}
+
+function FileField({
+  label,
+  onChange,
+}: {
+  label: string;
+  onChange: (file: File | null) => void;
+}) {
+  return (
+    <label className="mt-3 block">
+      <span className="mb-2 block text-xs uppercase tracking-[0.25em] text-stone-500">{label}</span>
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(event) => onChange(event.target.files?.[0] ?? null)}
+        className="block w-full text-sm text-stone-300 file:mr-4 file:rounded-full file:border-0 file:bg-amber-300 file:px-4 file:py-2 file:text-xs file:uppercase file:tracking-[0.2em] file:text-stone-950"
       />
     </label>
   );

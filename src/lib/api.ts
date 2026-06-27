@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 
 export type SiteSettingsRow = {
   id: string;
+  user_id: string;
   hero_title: string | null;
   hero_subtitle: string | null;
   hero_description: string | null;
@@ -11,6 +12,7 @@ export type SiteSettingsRow = {
 
 export type PortfolioRow = {
   id: string;
+  user_id: string;
   title: string;
   category: string;
   image_url: string;
@@ -19,22 +21,24 @@ export type PortfolioRow = {
 
 export type ServiceRow = {
   id: string;
+  user_id: string;
   title: string;
   description: string;
 };
 
 export type AboutRow = {
   id: string;
+  user_id: string;
   content: string | null;
   image_url: string | null;
 };
 
-export type PortfolioInsert = Omit<PortfolioRow, "id">;
+export type PortfolioInsert = Omit<PortfolioRow, "id" | "user_id">;
 export type PortfolioUpdate = Partial<PortfolioInsert>;
-export type ServiceInsert = Omit<ServiceRow, "id">;
+export type ServiceInsert = Omit<ServiceRow, "id" | "user_id">;
 export type ServiceUpdate = Partial<ServiceInsert>;
-export type SiteSettingsUpdate = Omit<SiteSettingsRow, "id">;
-export type AboutUpdate = Omit<AboutRow, "id">;
+export type SiteSettingsUpdate = Omit<SiteSettingsRow, "id" | "user_id">;
+export type AboutUpdate = Omit<AboutRow, "id" | "user_id">;
 
 const DEFAULT_STORAGE_BUCKET = "site-assets";
 
@@ -43,6 +47,26 @@ const splitAboutParagraphs = (content: string | null | undefined) =>
     .split(/\n{2,}/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean);
+
+async function getAuthenticatedUser() {
+  if (!supabase) {
+    return null;
+  }
+
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error) {
+    console.error("Failed to resolve authenticated user", error);
+    return null;
+  }
+
+  return data.user ?? null;
+}
+
+async function getAuthenticatedUserId() {
+  const user = await getAuthenticatedUser();
+  return user?.id ?? null;
+}
 
 const resolveStorageUrl = (value: string | null | undefined, fallback: string) => {
   if (!value) {
@@ -141,14 +165,54 @@ const mergeSiteContent = (
   };
 };
 
+export async function uploadUserAsset(file: File) {
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const user = await getAuthenticatedUser();
+
+  if (!user) {
+    throw new Error("You must be logged in to upload files.");
+  }
+
+  const safeFileName = file.name.replace(/\s+/g, "-");
+  const filePath = `${user.id}/${Date.now()}-${safeFileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(DEFAULT_STORAGE_BUCKET)
+    .upload(filePath, file, {
+      upsert: true,
+    });
+
+  if (uploadError) {
+    throw uploadError;
+  }
+
+  const { data } = supabase.storage.from(DEFAULT_STORAGE_BUCKET).getPublicUrl(filePath);
+
+  return {
+    filePath,
+    publicUrl: data.publicUrl,
+    storageValue: `storage:${DEFAULT_STORAGE_BUCKET}/${filePath}`,
+  };
+}
+
 export async function getSiteSettings() {
   if (!supabase) {
     return null;
   }
 
+  const userId = await getAuthenticatedUserId();
+
+  if (!userId) {
+    return null;
+  }
+
   const { data, error } = await supabase
     .from("site_settings")
-    .select("id, hero_title, hero_subtitle, hero_description, hero_image")
+    .select("id, user_id, hero_title, hero_subtitle, hero_description, hero_image")
+    .eq("user_id", userId)
     .limit(1)
     .maybeSingle();
 
@@ -165,9 +229,16 @@ export async function getPortfolio() {
     return [] as PortfolioRow[];
   }
 
+  const userId = await getAuthenticatedUserId();
+
+  if (!userId) {
+    return [] as PortfolioRow[];
+  }
+
   const { data, error } = await supabase
     .from("portfolio")
-    .select("id, title, category, image_url, is_published")
+    .select("id, user_id, title, category, image_url, is_published")
+    .eq("user_id", userId)
     .eq("is_published", true)
     .order("title", { ascending: true });
 
@@ -184,9 +255,16 @@ export async function getAdminPortfolio() {
     return [] as PortfolioRow[];
   }
 
+  const userId = await getAuthenticatedUserId();
+
+  if (!userId) {
+    return [] as PortfolioRow[];
+  }
+
   const { data, error } = await supabase
     .from("portfolio")
-    .select("id, title, category, image_url, is_published")
+    .select("id, user_id, title, category, image_url, is_published")
+    .eq("user_id", userId)
     .order("title", { ascending: true });
 
   if (error) {
@@ -202,9 +280,16 @@ export async function getServices() {
     return [] as ServiceRow[];
   }
 
+  const userId = await getAuthenticatedUserId();
+
+  if (!userId) {
+    return [] as ServiceRow[];
+  }
+
   const { data, error } = await supabase
     .from("services")
-    .select("id, title, description")
+    .select("id, user_id, title, description")
+    .eq("user_id", userId)
     .order("title", { ascending: true });
 
   if (error) {
@@ -224,9 +309,16 @@ export async function getAbout() {
     return null;
   }
 
+  const userId = await getAuthenticatedUserId();
+
+  if (!userId) {
+    return null;
+  }
+
   const { data, error } = await supabase
     .from("about")
-    .select("id, content, image_url")
+    .select("id, user_id, content, image_url")
+    .eq("user_id", userId)
     .limit(1)
     .maybeSingle();
 
@@ -243,12 +335,20 @@ export async function upsertSiteSettings(input: SiteSettingsUpdate, id?: string)
     throw new Error("Supabase is not configured.");
   }
 
-  const payload = id ? { id, ...input } : input;
+  const userId = await getAuthenticatedUserId();
+
+  if (!userId) {
+    throw new Error("You must be logged in to save site settings.");
+  }
+
+  const payload = id ? { id, user_id: userId, ...input } : { user_id: userId, ...input };
 
   const { data, error } = await supabase
     .from("site_settings")
-    .upsert(payload)
-    .select("id, hero_title, hero_subtitle, hero_description, hero_image")
+    .upsert(payload, {
+      onConflict: "user_id",
+    })
+    .select("id, user_id, hero_title, hero_subtitle, hero_description, hero_image")
     .single();
 
   if (error) {
@@ -263,12 +363,20 @@ export async function upsertAbout(input: AboutUpdate, id?: string) {
     throw new Error("Supabase is not configured.");
   }
 
-  const payload = id ? { id, ...input } : input;
+  const userId = await getAuthenticatedUserId();
+
+  if (!userId) {
+    throw new Error("You must be logged in to save about content.");
+  }
+
+  const payload = id ? { id, user_id: userId, ...input } : { user_id: userId, ...input };
 
   const { data, error } = await supabase
     .from("about")
-    .upsert(payload)
-    .select("id, content, image_url")
+    .upsert(payload, {
+      onConflict: "user_id",
+    })
+    .select("id, user_id, content, image_url")
     .single();
 
   if (error) {
@@ -299,10 +407,19 @@ export async function createPortfolio(input: PortfolioInsert) {
     throw new Error("Supabase is not configured.");
   }
 
+  const userId = await getAuthenticatedUserId();
+
+  if (!userId) {
+    throw new Error("You must be logged in to create portfolio items.");
+  }
+
   const { data, error } = await supabase
     .from("portfolio")
-    .insert(input)
-    .select("id, title, category, image_url, is_published")
+    .insert({
+      ...input,
+      user_id: userId,
+    })
+    .select("id, user_id, title, category, image_url, is_published")
     .single();
 
   if (error) {
@@ -317,11 +434,21 @@ export async function updatePortfolio(id: string, input: PortfolioUpdate) {
     throw new Error("Supabase is not configured.");
   }
 
+  const userId = await getAuthenticatedUserId();
+
+  if (!userId) {
+    throw new Error("You must be logged in to update portfolio items.");
+  }
+
   const { data, error } = await supabase
     .from("portfolio")
-    .update(input)
+    .update({
+      ...input,
+      user_id: userId,
+    })
     .eq("id", id)
-    .select("id, title, category, image_url, is_published")
+    .eq("user_id", userId)
+    .select("id, user_id, title, category, image_url, is_published")
     .single();
 
   if (error) {
@@ -336,7 +463,13 @@ export async function deletePortfolio(id: string) {
     throw new Error("Supabase is not configured.");
   }
 
-  const { error } = await supabase.from("portfolio").delete().eq("id", id);
+  const userId = await getAuthenticatedUserId();
+
+  if (!userId) {
+    throw new Error("You must be logged in to delete portfolio items.");
+  }
+
+  const { error } = await supabase.from("portfolio").delete().eq("id", id).eq("user_id", userId);
 
   if (error) {
     throw error;
@@ -348,10 +481,19 @@ export async function createService(input: ServiceInsert) {
     throw new Error("Supabase is not configured.");
   }
 
+  const userId = await getAuthenticatedUserId();
+
+  if (!userId) {
+    throw new Error("You must be logged in to create services.");
+  }
+
   const { data, error } = await supabase
     .from("services")
-    .insert(input)
-    .select("id, title, description")
+    .insert({
+      ...input,
+      user_id: userId,
+    })
+    .select("id, user_id, title, description")
     .single();
 
   if (error) {
@@ -366,11 +508,21 @@ export async function updateService(id: string, input: ServiceUpdate) {
     throw new Error("Supabase is not configured.");
   }
 
+  const userId = await getAuthenticatedUserId();
+
+  if (!userId) {
+    throw new Error("You must be logged in to update services.");
+  }
+
   const { data, error } = await supabase
     .from("services")
-    .update(input)
+    .update({
+      ...input,
+      user_id: userId,
+    })
     .eq("id", id)
-    .select("id, title, description")
+    .eq("user_id", userId)
+    .select("id, user_id, title, description")
     .single();
 
   if (error) {
@@ -385,7 +537,13 @@ export async function deleteService(id: string) {
     throw new Error("Supabase is not configured.");
   }
 
-  const { error } = await supabase.from("services").delete().eq("id", id);
+  const userId = await getAuthenticatedUserId();
+
+  if (!userId) {
+    throw new Error("You must be logged in to delete services.");
+  }
+
+  const { error } = await supabase.from("services").delete().eq("id", id).eq("user_id", userId);
 
   if (error) {
     throw error;
