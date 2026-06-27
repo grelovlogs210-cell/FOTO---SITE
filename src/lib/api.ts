@@ -33,6 +33,8 @@ export type PortfolioInsert = Omit<PortfolioRow, "id">;
 export type PortfolioUpdate = Partial<PortfolioInsert>;
 export type ServiceInsert = Omit<ServiceRow, "id">;
 export type ServiceUpdate = Partial<ServiceInsert>;
+export type SiteSettingsUpdate = Omit<SiteSettingsRow, "id">;
+export type AboutUpdate = Omit<AboutRow, "id">;
 
 const DEFAULT_STORAGE_BUCKET = "site-assets";
 
@@ -177,6 +179,24 @@ export async function getPortfolio() {
   return (data ?? []) satisfies PortfolioRow[];
 }
 
+export async function getAdminPortfolio() {
+  if (!supabase) {
+    return [] as PortfolioRow[];
+  }
+
+  const { data, error } = await supabase
+    .from("portfolio")
+    .select("id, title, category, image_url, is_published")
+    .order("title", { ascending: true });
+
+  if (error) {
+    console.error("Failed to fetch admin portfolio", error);
+    return [];
+  }
+
+  return (data ?? []) satisfies PortfolioRow[];
+}
+
 export async function getServices() {
   if (!supabase) {
     return [] as ServiceRow[];
@@ -193,6 +213,10 @@ export async function getServices() {
   }
 
   return (data ?? []) satisfies ServiceRow[];
+}
+
+export async function getAdminServices() {
+  return getServices();
 }
 
 export async function getAbout() {
@@ -212,6 +236,46 @@ export async function getAbout() {
   }
 
   return data satisfies AboutRow | null;
+}
+
+export async function upsertSiteSettings(input: SiteSettingsUpdate, id?: string) {
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const payload = id ? { id, ...input } : input;
+
+  const { data, error } = await supabase
+    .from("site_settings")
+    .upsert(payload)
+    .select("id, hero_title, hero_subtitle, hero_description, hero_image")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data satisfies SiteSettingsRow;
+}
+
+export async function upsertAbout(input: AboutUpdate, id?: string) {
+  if (!supabase) {
+    throw new Error("Supabase is not configured.");
+  }
+
+  const payload = id ? { id, ...input } : input;
+
+  const { data, error } = await supabase
+    .from("about")
+    .upsert(payload)
+    .select("id, content, image_url")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data satisfies AboutRow;
 }
 
 export async function getSiteContent(): Promise<SiteContent> {
