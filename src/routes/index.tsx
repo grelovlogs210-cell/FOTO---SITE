@@ -19,7 +19,7 @@ export const Route = createFileRoute("/")({
         content:
           "Cinematic storytelling e dire\u00E7\u00E3o visual. Fotografia, filmes para marcas, conte\u00FAdo editorial e dire\u00E7\u00E3o criativa.",
       },
-      { property: "og:image", content: site.hero.image },
+      { property: "og:image", content: safeImageSrc(site.hero.image) },
     ],
   }),
   component: Index,
@@ -32,18 +32,72 @@ const BEIGE_DEEP = "#ede3d2";
 const BROWN = "#3b2a1d";
 const BROWN_SOFT = "#6b5443";
 const GOLD = "#c9a96a";
+const fallback = "/placeholder.jpg";
+
+function safeImageSrc(src: string | null | undefined) {
+  return src && src.trim() ? src : fallback;
+}
+
+function normalizeContent(content: SiteContent | undefined): SiteContent {
+  const source = content ?? site;
+
+  return {
+    ...site,
+    ...source,
+    hero: {
+      ...site.hero,
+      ...source.hero,
+      image: safeImageSrc(source.hero?.image ?? site.hero.image),
+    },
+    portfolio: {
+      ...site.portfolio,
+      ...source.portfolio,
+      items:
+        source.portfolio?.items && source.portfolio.items.length > 0
+          ? source.portfolio.items
+          : site.portfolio.items,
+    },
+    about: {
+      ...site.about,
+      ...source.about,
+      paragraphs:
+        source.about?.paragraphs && source.about.paragraphs.length > 0
+          ? source.about.paragraphs
+          : site.about.paragraphs,
+      image: safeImageSrc(source.about?.image ?? site.about.image),
+    },
+    services: {
+      ...site.services,
+      ...source.services,
+      items:
+        source.services?.items && source.services.items.length > 0
+          ? source.services.items
+          : site.services.items,
+    },
+    contact: {
+      ...site.contact,
+      ...source.contact,
+      whatsapp: {
+        ...site.contact.whatsapp,
+        ...source.contact?.whatsapp,
+      },
+    },
+  };
+}
 
 function Index() {
-  const { data } = useQuery({
+  const { data, error, isError, isFetching, isLoading, refetch } = useQuery({
     queryKey: ["site-content"],
     queryFn: getSiteContent,
     initialData: site,
   });
 
-  const content = data ?? site;
+  const content = normalizeContent(data);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: BEIGE, color: BROWN, ...SANS }}>
+      {(isLoading || isFetching) && <LoadingNotice />}
+      {isError && <ErrorNotice message={error?.message} onRetry={() => void refetch()} />}
       <Nav content={content} />
       <Hero content={content} />
       <Portfolio content={content} />
@@ -52,6 +106,68 @@ function Index() {
       <CtaFinal content={content} />
       <Contact content={content} />
       <Footer content={content} />
+    </div>
+  );
+}
+
+function LoadingNotice() {
+  return (
+    <div className="fixed top-24 right-6 z-50">
+      <div
+        className="flex items-center gap-3 rounded-full px-4 py-3 shadow-[0_18px_45px_-20px_rgba(59,42,29,0.55)]"
+        style={{
+          backgroundColor: "rgba(247,241,232,0.92)",
+          border: "1px solid rgba(201,169,106,0.35)",
+          color: BROWN,
+        }}
+      >
+        <span
+          className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-transparent"
+          style={{ borderTopColor: GOLD, borderRightColor: GOLD }}
+          aria-hidden="true"
+        />
+        <span className="text-[10px] tracking-[0.3em] uppercase">Carregando conteudo</span>
+      </div>
+    </div>
+  );
+}
+
+function ErrorNotice({ message, onRetry }: { message?: string; onRetry: () => void }) {
+  return (
+    <div className="fixed top-24 left-1/2 z-50 w-[min(92vw,34rem)] -translate-x-1/2">
+      <div
+        className="rounded-[1.5rem] px-5 py-4 shadow-[0_20px_60px_-24px_rgba(59,42,29,0.55)]"
+        style={{
+          backgroundColor: "rgba(59,42,29,0.94)",
+          border: "1px solid rgba(201,169,106,0.28)",
+          color: BEIGE,
+        }}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="text-[10px] tracking-[0.35em] uppercase" style={{ color: GOLD }}>
+              Erro ao sincronizar
+            </div>
+            <p className="mt-2 text-sm leading-relaxed" style={{ color: "rgba(247,241,232,0.82)" }}>
+              Nao foi possivel atualizar os dados agora. O site continua disponivel com conteudo de
+              fallback.
+            </p>
+            {message ? (
+              <p className="mt-2 text-xs leading-relaxed" style={{ color: "rgba(247,241,232,0.62)" }}>
+                {message}
+              </p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="shrink-0 rounded-full px-4 py-2 text-[10px] tracking-[0.25em] uppercase transition-transform hover:-translate-y-0.5"
+            style={{ backgroundColor: GOLD, color: BROWN }}
+          >
+            Tentar de novo
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -109,7 +225,7 @@ function Hero({ content }: { content: SiteContent }) {
   return (
     <section id="top" className="relative min-h-screen w-full overflow-hidden">
       <img
-        src={content.hero.image}
+        src={safeImageSrc(content.hero.image)}
         alt=""
         width={1920}
         height={1280}
@@ -254,7 +370,7 @@ function PortfolioCard({ item, className = "" }: { item: PortfolioItem; classNam
         }`}
       >
         <img
-          src={item.src}
+          src={safeImageSrc(item.src)}
           alt={item.title}
           loading="lazy"
           className="h-full w-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-105"
@@ -290,7 +406,7 @@ function About({ content }: { content: SiteContent }) {
         <div className="relative">
           <div className="overflow-hidden rounded-[2rem]">
             <img
-              src={content.about.image}
+              src={safeImageSrc(content.about.image)}
               alt={content.brand.name}
               loading="lazy"
               className="aspect-[4/5] w-full object-cover"
