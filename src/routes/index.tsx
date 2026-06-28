@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import logo from "@/assets/logo.png";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { site, type PortfolioItem, type Service, type SiteContent } from "@/content/site";
 import { getSiteContent } from "@/lib/api";
 
@@ -189,7 +188,7 @@ function Nav({ content }: { content: SiteContent }) {
           }}
         >
           <img
-            src={logo}
+            src={safeImageSrc(content.hero.image)}
             alt={content.brand.name}
             className="h-11 w-auto sm:h-12"
             style={{ maxHeight: 48, filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.28))" }}
@@ -355,8 +354,9 @@ function PortfolioCard({ item, className = "" }: { item: PortfolioItem; classNam
   const isTall = className.includes("row-span-2");
 
   return (
-    <a
-      href="#contato"
+    <Link
+      to="/projects/$id"
+      params={{ id: item.id }}
       className={`group relative block overflow-hidden rounded-[2rem] ${className}`}
       style={{ backgroundColor: BEIGE_DEEP }}
     >
@@ -391,7 +391,7 @@ function PortfolioCard({ item, className = "" }: { item: PortfolioItem; classNam
           </h3>
         </div>
       </div>
-    </a>
+    </Link>
   );
 }
 

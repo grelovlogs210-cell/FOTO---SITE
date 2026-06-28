@@ -3,6 +3,9 @@ create extension if not exists pgcrypto;
 create table if not exists public.site_settings (
   id uuid primary key default gen_random_uuid(),
   user_id uuid,
+  site_name text,
+  site_tagline text,
+  general_info text,
   hero_title text,
   hero_subtitle text,
   hero_description text,
@@ -19,6 +22,7 @@ create table if not exists public.about (
 create table if not exists public.services (
   id uuid primary key default gen_random_uuid(),
   user_id uuid,
+  position integer not null default 0,
   title text not null,
   description text not null
 );
@@ -26,16 +30,26 @@ create table if not exists public.services (
 create table if not exists public.portfolio (
   id uuid primary key default gen_random_uuid(),
   user_id uuid,
+  position integer not null default 0,
   title text not null,
   category text not null,
+  detailed_description text,
+  gallery jsonb not null default '[]'::jsonb,
   image_url text not null,
   is_published boolean not null default true
 );
 
 alter table public.site_settings add column if not exists user_id uuid;
+alter table public.site_settings add column if not exists site_name text;
+alter table public.site_settings add column if not exists site_tagline text;
+alter table public.site_settings add column if not exists general_info text;
 alter table public.about add column if not exists user_id uuid;
 alter table public.services add column if not exists user_id uuid;
+alter table public.services add column if not exists position integer not null default 0;
 alter table public.portfolio add column if not exists user_id uuid;
+alter table public.portfolio add column if not exists position integer not null default 0;
+alter table public.portfolio add column if not exists detailed_description text;
+alter table public.portfolio add column if not exists gallery jsonb not null default '[]'::jsonb;
 
 do $$
 declare
@@ -66,6 +80,24 @@ begin
   end if;
 end $$;
 
+with ordered_services as (
+  select id, row_number() over (partition by user_id order by coalesce(position, 0), title, id) - 1 as next_position
+  from public.services
+)
+update public.services
+set position = ordered_services.next_position
+from ordered_services
+where public.services.id = ordered_services.id;
+
+with ordered_portfolio as (
+  select id, row_number() over (partition by user_id order by coalesce(position, 0), title, id) - 1 as next_position
+  from public.portfolio
+)
+update public.portfolio
+set position = ordered_portfolio.next_position
+from ordered_portfolio
+where public.portfolio.id = ordered_portfolio.id;
+
 alter table public.site_settings alter column user_id set not null;
 alter table public.about alter column user_id set not null;
 alter table public.services alter column user_id set not null;
@@ -75,6 +107,8 @@ create unique index if not exists site_settings_user_id_key on public.site_setti
 create unique index if not exists about_user_id_key on public.about (user_id);
 create index if not exists services_user_id_idx on public.services (user_id);
 create index if not exists portfolio_user_id_idx on public.portfolio (user_id);
+create index if not exists services_user_position_idx on public.services (user_id, position);
+create index if not exists portfolio_user_position_idx on public.portfolio (user_id, position);
 
 alter table public.site_settings enable row level security;
 alter table public.about enable row level security;
