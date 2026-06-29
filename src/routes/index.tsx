@@ -1,24 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
-import { Link, createFileRoute } from "@tanstack/react-router";
-import { site, type PortfolioItem, type Service, type SiteContent } from "@/content/site";
-import { getSiteContent } from "@/lib/api";
+import { createFileRoute } from "@tanstack/react-router";
+import { config, site, whatsappLink, type SiteContent } from "@/content/site";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Emilly Alves - Fotografia, Filme & Dire\u00E7\u00E3o Criativa" },
-      {
-        name: "description",
-        content:
-          "Emilly Alves: fot\u00F3grafa, filmmaker e diretora criativa. Visual storytelling, dire\u00E7\u00E3o visual e produ\u00E7\u00E3o audiovisual com est\u00E9tica cinematogr\u00E1fica.",
-      },
-      { property: "og:title", content: "Emilly Alves - Fotografia, Filme & Dire\u00E7\u00E3o Criativa" },
-      {
-        property: "og:description",
-        content:
-          "Cinematic storytelling e dire\u00E7\u00E3o visual. Fotografia, filmes para marcas, conte\u00FAdo editorial e dire\u00E7\u00E3o criativa.",
-      },
-      { property: "og:image", content: safeImageSrc(site.hero.image) },
+      { title: `${config.nome} | Fotografia Premium` },
+      { name: "description", content: config.subtitulo },
+      { property: "og:title", content: `${config.nome} | Fotografia Premium` },
+      { property: "og:description", content: config.subtitulo },
+      { property: "og:image", content: site.hero.image },
     ],
   }),
   component: Index,
@@ -33,140 +23,20 @@ const BROWN_SOFT = "#6b5443";
 const GOLD = "#c9a96a";
 const fallback = "/placeholder.jpg";
 
-function safeImageSrc(src: string | null | undefined) {
-  return src && src.trim() ? src : fallback;
-}
-
-function normalizeContent(content: SiteContent | undefined): SiteContent {
-  const source = content ?? site;
-
-  return {
-    ...site,
-    ...source,
-    hero: {
-      ...site.hero,
-      ...source.hero,
-      image: safeImageSrc(source.hero?.image ?? site.hero.image),
-    },
-    portfolio: {
-      ...site.portfolio,
-      ...source.portfolio,
-      items:
-        source.portfolio?.items && source.portfolio.items.length > 0
-          ? source.portfolio.items
-          : site.portfolio.items,
-    },
-    about: {
-      ...site.about,
-      ...source.about,
-      paragraphs:
-        source.about?.paragraphs && source.about.paragraphs.length > 0
-          ? source.about.paragraphs
-          : site.about.paragraphs,
-      image: safeImageSrc(source.about?.image ?? site.about.image),
-    },
-    services: {
-      ...site.services,
-      ...source.services,
-      items:
-        source.services?.items && source.services.items.length > 0
-          ? source.services.items
-          : site.services.items,
-    },
-    contact: {
-      ...site.contact,
-      ...source.contact,
-      whatsapp: {
-        ...site.contact.whatsapp,
-        ...source.contact?.whatsapp,
-      },
-    },
-  };
+function safeImage(src: string) {
+  return src.trim() ? src : fallback;
 }
 
 function Index() {
-  const { data, error, isError, isFetching, isLoading, refetch } = useQuery({
-    queryKey: ["site-content"],
-    queryFn: getSiteContent,
-    initialData: site,
-  });
-
-  const content = normalizeContent(data);
-
   return (
     <div className="min-h-screen" style={{ backgroundColor: BEIGE, color: BROWN, ...SANS }}>
-      {(isLoading || isFetching) && <LoadingNotice />}
-      {isError && <ErrorNotice message={error?.message} onRetry={() => void refetch()} />}
-      <Nav content={content} />
-      <Hero content={content} />
-      <Portfolio content={content} />
-      <About content={content} />
-      <Services content={content} />
-      <CtaFinal content={content} />
-      <Contact content={content} />
-      <Footer content={content} />
-    </div>
-  );
-}
-
-function LoadingNotice() {
-  return (
-    <div className="fixed top-24 right-6 z-50">
-      <div
-        className="flex items-center gap-3 rounded-full px-4 py-3 shadow-[0_18px_45px_-20px_rgba(59,42,29,0.55)]"
-        style={{
-          backgroundColor: "rgba(247,241,232,0.92)",
-          border: "1px solid rgba(201,169,106,0.35)",
-          color: BROWN,
-        }}
-      >
-        <span
-          className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-transparent"
-          style={{ borderTopColor: GOLD, borderRightColor: GOLD }}
-          aria-hidden="true"
-        />
-        <span className="text-[10px] tracking-[0.3em] uppercase">Carregando conteudo</span>
-      </div>
-    </div>
-  );
-}
-
-function ErrorNotice({ message, onRetry }: { message?: string; onRetry: () => void }) {
-  return (
-    <div className="fixed top-24 left-1/2 z-50 w-[min(92vw,34rem)] -translate-x-1/2">
-      <div
-        className="rounded-[1.5rem] px-5 py-4 shadow-[0_20px_60px_-24px_rgba(59,42,29,0.55)]"
-        style={{
-          backgroundColor: "rgba(59,42,29,0.94)",
-          border: "1px solid rgba(201,169,106,0.28)",
-          color: BEIGE,
-        }}
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="text-[10px] tracking-[0.35em] uppercase" style={{ color: GOLD }}>
-              Erro ao sincronizar
-            </div>
-            <p className="mt-2 text-sm leading-relaxed" style={{ color: "rgba(247,241,232,0.82)" }}>
-              Nao foi possivel atualizar os dados agora. O site continua disponivel com conteudo de
-              fallback.
-            </p>
-            {message ? (
-              <p className="mt-2 text-xs leading-relaxed" style={{ color: "rgba(247,241,232,0.62)" }}>
-                {message}
-              </p>
-            ) : null}
-          </div>
-          <button
-            type="button"
-            onClick={onRetry}
-            className="shrink-0 rounded-full px-4 py-2 text-[10px] tracking-[0.25em] uppercase transition-transform hover:-translate-y-0.5"
-            style={{ backgroundColor: GOLD, color: BROWN }}
-          >
-            Tentar de novo
-          </button>
-        </div>
-      </div>
+      <Nav content={site} />
+      <Hero content={site} />
+      <Portfolio content={site} />
+      <About content={site} />
+      <Services content={site} />
+      <FinalCta content={site} />
+      <Footer content={site} />
     </div>
   );
 }
@@ -175,46 +45,25 @@ function Nav({ content }: { content: SiteContent }) {
   return (
     <header
       className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md"
-      style={{ backgroundColor: "rgba(59,42,29,0.78)", borderBottom: "1px solid rgba(201,169,106,0.22)" }}
+      style={{ backgroundColor: "rgba(59,42,29,0.42)", borderBottom: "1px solid rgba(247,241,232,0.08)" }}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-10">
-        <a
-          href="#top"
-          className="flex items-center rounded-xl px-3 py-1.5"
-          style={{
-            backgroundColor: "rgba(247,241,232,0.1)",
-            backdropFilter: "blur(4px)",
-            boxShadow: "0 10px 30px rgba(0,0,0,0.18)",
-          }}
-        >
-          <img
-            src={safeImageSrc(content.hero.image)}
-            alt={content.brand.name}
-            className="h-11 w-auto sm:h-12"
-            style={{ maxHeight: 48, filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.28))" }}
-          />
+        <a href="#top" className="text-lg uppercase tracking-[0.28em]" style={{ color: BEIGE, ...SERIF }}>
+          {content.brand.name}
         </a>
-        <nav className="hidden items-center gap-10 md:flex">
+        <nav className="hidden items-center gap-8 md:flex">
           {content.nav.map((item) => (
             <a
               key={item.href}
               href={item.href}
-              className="text-xs tracking-[0.25em] uppercase transition-colors hover:opacity-100"
-              style={{ color: "rgba(247,241,232,0.82)" }}
+              className="text-[11px] uppercase tracking-[0.3em] transition-opacity hover:opacity-70"
+              style={{ color: "rgba(247,241,232,0.78)" }}
             >
               {item.label}
             </a>
           ))}
         </nav>
-        <a
-          href={content.contact.whatsapp.href}
-          target="_blank"
-          rel="noreferrer"
-          className="hidden rounded-full px-5 py-2.5 text-xs tracking-[0.25em] uppercase transition-all hover:-translate-y-0.5 md:inline-block"
-          style={{ backgroundColor: BROWN, color: BEIGE }}
-        >
-          Contato
-        </a>
+        <WhatsappButton href={whatsappLink} label="WhatsApp" light />
       </div>
     </header>
   );
@@ -222,70 +71,184 @@ function Nav({ content }: { content: SiteContent }) {
 
 function Hero({ content }: { content: SiteContent }) {
   return (
-    <section id="top" className="relative min-h-screen w-full overflow-hidden">
+    <section id="top" className="relative min-h-screen overflow-hidden">
       <img
-        src={safeImageSrc(content.hero.image)}
-        alt=""
-        width={1920}
-        height={1280}
-        className="absolute inset-0 h-full w-full object-cover"
-        style={{ objectPosition: "center" }}
+        src={safeImage(content.hero.image)}
+        alt={content.hero.title}
+        className="absolute inset-0 h-full w-full object-cover object-center"
       />
       <div
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(180deg, rgba(59,42,29,0.55) 0%, rgba(59,42,29,0.35) 45%, rgba(59,42,29,0.75) 100%)",
+            "linear-gradient(180deg, rgba(59,42,29,0.58) 0%, rgba(59,42,29,0.42) 42%, rgba(59,42,29,0.82) 100%)",
         }}
       />
-      <div className="relative z-10 mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center px-6 pt-24 pb-20 text-center">
-        <span className="mb-8 text-[10px] tracking-[0.5em] uppercase" style={{ color: GOLD }}>
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center px-6 pb-20 pt-28 text-center">
+        <span className="text-[10px] uppercase tracking-[0.48em]" style={{ color: GOLD }}>
           {content.hero.eyebrow}
         </span>
         <h1
-          className="text-5xl leading-[0.95] sm:text-7xl md:text-8xl lg:text-9xl"
-          style={{ ...SERIF, color: BEIGE, fontWeight: 300, letterSpacing: "-0.02em" }}
+          className="mt-7 text-5xl leading-[0.92] sm:text-6xl md:text-7xl lg:text-8xl"
+          style={{ ...SERIF, color: BEIGE, fontWeight: 300 }}
         >
           {content.hero.title}
         </h1>
-        <div className="my-8 flex items-center gap-4">
-          <span className="h-px w-12" style={{ backgroundColor: GOLD }} />
-          <span className="text-xs tracking-[0.35em] uppercase" style={{ color: BEIGE }}>
-            {content.hero.subtitle}
-          </span>
-          <span className="h-px w-12" style={{ backgroundColor: GOLD }} />
-        </div>
         <p
-          className="mx-auto max-w-xl text-base leading-relaxed sm:text-lg"
-          style={{ color: "rgba(247,241,232,0.85)" }}
+          className="mt-7 max-w-2xl text-base leading-relaxed sm:text-lg"
+          style={{ color: "rgba(247,241,232,0.86)" }}
         >
-          {content.hero.description}
+          {content.hero.subtitle}
         </p>
-        <div className="mt-12 flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
-          <a
-            href={content.hero.cta.href}
-            className="group inline-flex items-center gap-3 rounded-full px-9 py-4 text-xs tracking-[0.3em] uppercase shadow-[0_20px_50px_-15px_rgba(201,169,106,0.6)] transition-all hover:-translate-y-0.5"
-            style={{ backgroundColor: GOLD, color: BROWN }}
-          >
-            {content.hero.cta.label}
-            <span className="transition-transform group-hover:translate-x-1">{"\u2192"}</span>
-          </a>
-          <a
-            href={content.hero.secondaryCta.href}
-            className="text-xs tracking-[0.3em] uppercase underline-offset-8 hover:underline"
-            style={{ color: BEIGE }}
-          >
-            {content.hero.secondaryCta.label}
-          </a>
+        <div className="mt-12 flex flex-wrap justify-center gap-4">
+          <WhatsappButton href={content.hero.cta.href} label={content.hero.cta.label} large />
+          <WhatsappButton href={whatsappLink} label="Quero um orcamento" large light />
         </div>
-      </div>
-      <div
-        className="absolute bottom-8 left-1/2 z-10 -translate-x-1/2 text-[10px] tracking-[0.4em] uppercase"
-        style={{ color: "rgba(247,241,232,0.7)" }}
-      >
-        Scroll
       </div>
     </section>
+  );
+}
+
+function Portfolio({ content }: { content: SiteContent }) {
+  return (
+    <section id="portfolio" className="px-6 py-24 lg:px-10 lg:py-32">
+      <div className="mx-auto max-w-7xl">
+        <SectionHeader
+          eyebrow={content.portfolio.eyebrow}
+          title={content.portfolio.title}
+          description={content.portfolio.description}
+        />
+        <div className="mt-16 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {content.portfolio.items.map((item) => (
+            <a
+              key={item.id}
+              href={whatsappLink}
+              target="_blank"
+              rel="noreferrer"
+              className="group overflow-hidden rounded-[2rem]"
+              style={{ backgroundColor: BEIGE_DEEP }}
+            >
+              <div className="relative">
+                <img
+                  src={safeImage(item.src)}
+                  alt={item.title}
+                  className="h-80 w-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.04] sm:h-96"
+                />
+                <div
+                  className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+                  style={{ background: "linear-gradient(180deg, rgba(59,42,29,0) 38%, rgba(59,42,29,0.82) 100%)" }}
+                />
+                <div className="absolute inset-x-0 bottom-0 translate-y-4 px-5 py-6 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
+                  <div className="text-[10px] uppercase tracking-[0.35em]" style={{ color: GOLD }}>
+                    {item.category}
+                  </div>
+                  <h3 className="mt-2 text-2xl" style={{ ...SERIF, color: BEIGE, fontWeight: 400 }}>
+                    {item.title}
+                  </h3>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function About({ content }: { content: SiteContent }) {
+  return (
+    <section id="sobre" className="px-6 py-24 lg:px-10 lg:py-32" style={{ backgroundColor: BEIGE_DEEP }}>
+      <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-18">
+        <div className="overflow-hidden rounded-[2.2rem] shadow-[0_30px_80px_-36px_rgba(59,42,29,0.35)]">
+          <img
+            src={safeImage(content.about.image)}
+            alt={content.brand.name}
+            className="aspect-[4/5] w-full object-cover object-center"
+          />
+        </div>
+        <div>
+          <SectionHeader eyebrow={content.about.eyebrow} title={content.about.title} align="left" />
+          <p className="mt-8 max-w-2xl text-lg leading-relaxed" style={{ color: BROWN_SOFT }}>
+            {content.about.description}
+          </p>
+          <div className="mt-10">
+            <WhatsappButton href={whatsappLink} label={content.about.ctaLabel} />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Services({ content }: { content: SiteContent }) {
+  return (
+    <section id="servicos" className="px-6 py-24 lg:px-10 lg:py-32" style={{ backgroundColor: BROWN, color: BEIGE }}>
+      <div className="mx-auto max-w-7xl">
+        <SectionHeader eyebrow={content.services.eyebrow} title={content.services.title} invert />
+        <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {content.services.items.map((service) => (
+            <article
+              key={service.id}
+              className="rounded-[2rem] p-8 transition-all duration-500 hover:-translate-y-1"
+              style={{
+                backgroundColor: "rgba(247,241,232,0.05)",
+                border: "1px solid rgba(201,169,106,0.22)",
+                boxShadow: "0 18px 45px -30px rgba(0,0,0,0.18)",
+              }}
+            >
+              <div className="text-[10px] uppercase tracking-[0.35em]" style={{ color: GOLD }}>
+                Servico
+              </div>
+              <h3 className="mt-5 text-3xl" style={{ ...SERIF, color: BEIGE, fontWeight: 400 }}>
+                {service.title}
+              </h3>
+              <p className="mt-4 text-sm leading-relaxed" style={{ color: "rgba(247,241,232,0.76)" }}>
+                {service.description}
+              </p>
+              <div className="mt-8">
+                <WhatsappButton href={whatsappLink} label={content.services.ctaLabel} dark />
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FinalCta({ content }: { content: SiteContent }) {
+  return (
+    <section id="cta" className="px-6 py-24 lg:px-10 lg:py-32" style={{ backgroundColor: BROWN }}>
+      <div className="mx-auto max-w-5xl text-center">
+        <span className="text-[10px] uppercase tracking-[0.45em]" style={{ color: GOLD }}>
+          {content.ctaFinal.eyebrow}
+        </span>
+        <h2
+          className="mt-6 text-4xl leading-[1.02] sm:text-5xl md:text-6xl"
+          style={{ ...SERIF, color: BEIGE, fontWeight: 300 }}
+        >
+          {content.ctaFinal.title}
+        </h2>
+        <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed" style={{ color: "rgba(247,241,232,0.74)" }}>
+          {content.ctaFinal.description}
+        </p>
+        <div className="mt-10">
+          <WhatsappButton href={content.ctaFinal.cta.href} label={content.ctaFinal.cta.label} large dark />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Footer({ content }: { content: SiteContent }) {
+  return (
+    <footer className="px-6 py-10 lg:px-10" style={{ backgroundColor: "#2d2017", color: "rgba(247,241,232,0.74)" }}>
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 text-[10px] uppercase tracking-[0.3em] sm:flex-row">
+        <span>{content.brand.name}</span>
+        <span style={{ color: GOLD }}>{config.whatsapp}</span>
+        <span>Fotografia premium para marcas e historias</span>
+      </div>
+    </footer>
   );
 }
 
@@ -302,315 +265,60 @@ function SectionHeader({
   align?: "left" | "center";
   invert?: boolean;
 }) {
-  const color = invert ? BEIGE : BROWN;
-  const soft = invert ? "rgba(247,241,232,0.75)" : BROWN_SOFT;
-
   return (
-    <div className={align === "center" ? "mx-auto max-w-2xl text-center" : "max-w-2xl"}>
-      <span className="text-[10px] tracking-[0.5em] uppercase" style={{ color: GOLD }}>
+    <div className={align === "center" ? "mx-auto max-w-3xl text-center" : "max-w-3xl"}>
+      <span className="text-[10px] uppercase tracking-[0.45em]" style={{ color: GOLD }}>
         {eyebrow}
       </span>
       <h2
-        className="mt-6 text-4xl leading-[1.05] sm:text-5xl md:text-6xl"
-        style={{ ...SERIF, color, fontWeight: 300, letterSpacing: "-0.01em" }}
+        className="mt-6 text-4xl leading-[1.02] sm:text-5xl md:text-6xl"
+        style={{ ...SERIF, color: invert ? BEIGE : BROWN, fontWeight: 300 }}
       >
         {title}
       </h2>
-      {description && (
-        <p className="mt-6 text-base leading-relaxed" style={{ color: soft }}>
+      {description ? (
+        <p className="mt-6 text-base leading-relaxed" style={{ color: invert ? "rgba(247,241,232,0.74)" : BROWN_SOFT }}>
           {description}
         </p>
-      )}
+      ) : null}
     </div>
   );
 }
 
-function Portfolio({ content }: { content: SiteContent }) {
-  const items = content.portfolio.items;
+function WhatsappButton({
+  href,
+  label,
+  dark = false,
+  large = false,
+  light = false,
+}: {
+  href: string;
+  label: string;
+  dark?: boolean;
+  large?: boolean;
+  light?: boolean;
+}) {
+  const backgroundColor = light ? "rgba(247,241,232,0.12)" : dark ? GOLD : BROWN;
+  const color = light ? BEIGE : dark ? BROWN : BEIGE;
 
   return (
-    <section id="portfolio" className="px-6 py-24 sm:py-32 lg:px-10 lg:py-40">
-      <div className="mx-auto max-w-7xl">
-        <SectionHeader
-          eyebrow={content.portfolio.eyebrow}
-          title={content.portfolio.title}
-          description={content.portfolio.description}
-        />
-        <div className="mt-16 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:mt-20 lg:grid-cols-3">
-          {items.map((item, i) => (
-            <PortfolioCard
-              key={item.id}
-              item={item}
-              className={i === 0 || i === 4 ? "lg:row-span-2" : ""}
-            />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function PortfolioCard({ item, className = "" }: { item: PortfolioItem; className?: string }) {
-  const isTall = className.includes("row-span-2");
-
-  return (
-    <Link
-      to="/projects/$id"
-      params={{ id: item.id }}
-      className={`group relative block overflow-hidden rounded-[2rem] ${className}`}
-      style={{ backgroundColor: BEIGE_DEEP }}
-    >
-      <div
-        className={`relative w-full overflow-hidden ${
-          isTall
-            ? "aspect-[3/4] lg:aspect-auto lg:h-full"
-            : item.aspect === "landscape"
-              ? "aspect-[4/3]"
-              : "aspect-[3/4]"
-        }`}
-      >
-        <img
-          src={safeImageSrc(item.src)}
-          alt={item.title}
-          loading="lazy"
-          className="h-full w-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-105"
-        />
-        <div
-          className="absolute inset-0 opacity-0 transition-opacity duration-700 group-hover:opacity-100"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(59,42,29,0) 35%, rgba(59,42,29,0.85) 100%)",
-          }}
-        />
-        <div className="absolute inset-x-0 bottom-0 translate-y-3 p-7 opacity-0 transition-all duration-700 group-hover:translate-y-0 group-hover:opacity-100">
-          <span className="text-[10px] tracking-[0.4em] uppercase" style={{ color: GOLD }}>
-            {item.category}
-          </span>
-          <h3 className="mt-2 text-2xl" style={{ ...SERIF, color: BEIGE, fontWeight: 400 }}>
-            {item.title}
-          </h3>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-function About({ content }: { content: SiteContent }) {
-  return (
-    <section
-      id="sobre"
-      className="px-6 py-24 sm:py-32 lg:px-10 lg:py-40"
-      style={{ backgroundColor: BEIGE_DEEP }}
-    >
-      <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-20">
-        <div className="relative">
-          <div className="overflow-hidden rounded-[2rem]">
-            <img
-              src={safeImageSrc(content.about.image)}
-              alt={content.brand.name}
-              loading="lazy"
-              className="aspect-[4/5] w-full object-cover"
-            />
-          </div>
-          <div
-            className="absolute -bottom-6 -right-6 hidden h-32 w-32 rounded-full sm:block"
-            style={{ border: `1px solid ${GOLD}` }}
-          />
-        </div>
-        <div>
-          <SectionHeader eyebrow={content.about.eyebrow} title={content.about.title} align="left" />
-          <div className="mt-8 space-y-5">
-            {content.about.paragraphs.map((paragraph, index) => (
-              <p key={index} className="text-base leading-relaxed" style={{ color: BROWN_SOFT }}>
-                {paragraph}
-              </p>
-            ))}
-          </div>
-          <div
-            className="mt-10 grid grid-cols-3 gap-6 border-t pt-8"
-            style={{ borderColor: "rgba(59,42,29,0.15)" }}
-          >
-            {content.about.stats.map((stat) => (
-              <div key={stat.label}>
-                <div
-                  className="text-3xl sm:text-4xl"
-                  style={{ ...SERIF, color: BROWN, fontWeight: 400 }}
-                >
-                  {stat.value}
-                </div>
-                <div
-                  className="mt-2 text-[10px] tracking-[0.3em] uppercase"
-                  style={{ color: BROWN_SOFT }}
-                >
-                  {stat.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Services({ content }: { content: SiteContent }) {
-  return (
-    <section
-      id="servicos"
-      className="px-6 py-24 sm:py-32 lg:px-10 lg:py-40"
-      style={{ backgroundColor: BROWN, color: BEIGE }}
-    >
-      <div className="mx-auto max-w-7xl">
-        <SectionHeader
-          eyebrow={content.services.eyebrow}
-          title={content.services.title}
-          invert
-        />
-        <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-3 lg:mt-20 lg:gap-8">
-          {content.services.items.map((service) => (
-            <ServiceCard key={service.id} service={service} />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ServiceCard({ service }: { service: Service }) {
-  return (
-    <div
-      className="group rounded-[2rem] p-10 transition-all duration-500 hover:-translate-y-1"
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className={`inline-flex items-center justify-center rounded-full uppercase tracking-[0.3em] transition-all duration-500 hover:-translate-y-0.5 ${
+        large ? "px-8 py-4 text-xs" : "px-6 py-3 text-[11px]"
+      }`}
       style={{
-        backgroundColor: "rgba(247,241,232,0.04)",
-        border: "1px solid rgba(201,169,106,0.25)",
+        backgroundColor,
+        color,
+        border: light ? "1px solid rgba(247,241,232,0.18)" : "none",
+        boxShadow: dark
+          ? "0 16px 40px -24px rgba(201,169,106,0.6)"
+          : "0 16px 40px -24px rgba(59,42,29,0.45)",
       }}
     >
-      <div
-        className="grid h-12 w-12 place-items-center rounded-full text-lg transition-colors"
-        style={{ border: `1px solid ${GOLD}`, color: GOLD }}
-      >
-        {"\u2726"}
-      </div>
-      <h3 className="mt-8 text-3xl" style={{ ...SERIF, color: BEIGE, fontWeight: 400 }}>
-        {service.title}
-      </h3>
-      <p className="mt-4 text-sm leading-relaxed" style={{ color: "rgba(247,241,232,0.75)" }}>
-        {service.description}
-      </p>
-      <div
-        className="mt-10 inline-flex items-center gap-3 text-[10px] tracking-[0.35em] uppercase transition-all group-hover:gap-5"
-        style={{ color: GOLD }}
-      >
-        Saiba mais <span>{"\u2192"}</span>
-      </div>
-    </div>
-  );
-}
-
-function CtaFinal({ content }: { content: SiteContent }) {
-  return (
-    <section className="px-6 py-24 sm:py-32 lg:px-10 lg:py-40">
-      <div className="mx-auto max-w-4xl text-center">
-        <span className="text-[10px] tracking-[0.5em] uppercase" style={{ color: GOLD }}>
-          {content.ctaFinal.eyebrow}
-        </span>
-        <h2
-          className="mt-6 text-4xl leading-[1.05] sm:text-6xl md:text-7xl"
-          style={{ ...SERIF, color: BROWN, fontWeight: 300, letterSpacing: "-0.01em" }}
-        >
-          {content.ctaFinal.title}
-        </h2>
-        <p className="mx-auto mt-8 max-w-xl text-base leading-relaxed" style={{ color: BROWN_SOFT }}>
-          {content.ctaFinal.description}
-        </p>
-        <a
-          href={content.ctaFinal.cta.href}
-          className="mt-12 inline-flex items-center gap-3 rounded-full px-10 py-4 text-xs tracking-[0.3em] uppercase shadow-[0_20px_50px_-15px_rgba(59,42,29,0.4)] transition-all hover:-translate-y-0.5"
-          style={{ backgroundColor: BROWN, color: BEIGE }}
-        >
-          {content.ctaFinal.cta.label} <span>{"\u2192"}</span>
-        </a>
-      </div>
-    </section>
-  );
-}
-
-function Contact({ content }: { content: SiteContent }) {
-  return (
-    <section
-      id="contato"
-      className="px-6 py-24 sm:py-32 lg:px-10 lg:py-40"
-      style={{ backgroundColor: BEIGE_DEEP }}
-    >
-      <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-2 lg:gap-20">
-        <div>
-          <SectionHeader
-            eyebrow={content.contact.eyebrow}
-            title={content.contact.title}
-            description={content.contact.description}
-            align="left"
-          />
-        </div>
-        <div className="space-y-8">
-          <a
-            href={content.contact.whatsapp.href}
-            target="_blank"
-            rel="noreferrer"
-            className="group flex items-center justify-between rounded-[2rem] p-8 transition-all hover:-translate-y-0.5"
-            style={{ backgroundColor: BROWN, color: BEIGE }}
-          >
-            <div>
-              <div className="text-[10px] tracking-[0.35em] uppercase" style={{ color: GOLD }}>
-                WhatsApp
-              </div>
-              <div className="mt-2 text-2xl" style={{ ...SERIF }}>
-                {content.contact.whatsapp.number}
-              </div>
-            </div>
-            <span
-              className="grid h-12 w-12 place-items-center rounded-full text-lg transition-transform group-hover:rotate-45"
-              style={{ backgroundColor: GOLD, color: BROWN }}
-            >
-              {"\u2192"}
-            </span>
-          </a>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-[2rem] p-8" style={{ backgroundColor: BEIGE }}>
-              <div className="text-[10px] tracking-[0.35em] uppercase" style={{ color: BROWN_SOFT }}>
-                E-mail
-              </div>
-              <div className="mt-3 text-sm break-all" style={{ color: BROWN }}>
-                {content.contact.email}
-              </div>
-            </div>
-            <div className="rounded-[2rem] p-8" style={{ backgroundColor: BEIGE }}>
-              <div className="text-[10px] tracking-[0.35em] uppercase" style={{ color: BROWN_SOFT }}>
-                Atelier
-              </div>
-              <div className="mt-3 text-sm" style={{ color: BROWN }}>
-                {content.contact.location}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Footer({ content }: { content: SiteContent }) {
-  return (
-    <footer
-      className="px-6 py-10 lg:px-10"
-      style={{ backgroundColor: BROWN, color: "rgba(247,241,232,0.7)" }}
-    >
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 text-[10px] tracking-[0.3em] uppercase sm:flex-row">
-        <span>&copy; {new Date().getFullYear()} {content.brand.name}</span>
-        <span style={{ color: GOLD, ...SERIF, fontSize: "14px", letterSpacing: "0.25em" }}>
-          {content.brand.monogram}
-        </span>
-        <span>Feito com vis\u00E3o</span>
-      </div>
-    </footer>
+      {label}
+    </a>
   );
 }

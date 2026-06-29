@@ -1,132 +1,103 @@
-// Centralized site content. Designed to be swapped for a CMS / Supabase fetch.
-// Replace this module with a server-loaded equivalent without touching the UI.
-const fallback = "/placeholder.jpg";
+import aboutImage from "@/assets/about.jpg";
+import heroImage from "@/assets/hero.jpg";
+import portfolio1 from "@/assets/p1.jpg";
+import portfolio2 from "@/assets/p2.jpg";
+import portfolio3 from "@/assets/p3.jpg";
+import portfolio4 from "@/assets/p4.jpg";
+import portfolio5 from "@/assets/p5.jpg";
+import portfolio6 from "@/assets/p6.jpg";
 
-export type PortfolioItem = {
-  id: string;
-  title: string;
-  category: string;
-  src: string;
-  aspect: "portrait" | "landscape";
+export const config = {
+  nome: "Emilly Alves",
+  titulo: "Fotografia que transforma momentos em historias inesqueciveis",
+  subtitulo: "Ensaios, campanhas e producoes visuais com estetica cinematografica",
+  whatsapp: "55NUMERO",
+  mensagem: "Ola, vi seu trabalho e quero um orcamento",
 };
 
-export type Service = {
-  id: string;
-  title: string;
-  description: string;
-};
+export const whatsappLink = `https://wa.me/${config.whatsapp}?text=${encodeURIComponent(config.mensagem)}`;
 
 export const site = {
   brand: {
-    name: "Emilly Alves",
+    name: config.nome,
     monogram: "EA",
-    tagline: "Fotografa • Filmmaker • Diretora Criativa",
+    tagline: "Fotografia, video e direcao criativa com assinatura premium",
   },
   nav: [
-    { label: "Projetos", href: "#portfolio" },
+    { label: "Inicio", href: "#top" },
+    { label: "Portfolio", href: "#portfolio" },
     { label: "Sobre", href: "#sobre" },
     { label: "Servicos", href: "#servicos" },
-    { label: "Contato", href: "#contato" },
+    { label: "Contato", href: "#cta" },
   ],
   hero: {
-    eyebrow: "Visual Storytelling & Cinematic Direction",
-    title: "Emilly Alves",
-    subtitle: "Fotografa • Filmmaker • Diretora Criativa",
-    description:
-      "Historias contadas em imagem e movimento com direcao visual, sensibilidade editorial e estetica cinematografica para marcas e projetos criativos.",
-    cta: { label: "Ver disponibilidade", href: "#contato" },
-    secondaryCta: { label: "Explorar projetos", href: "#portfolio" },
-    image: fallback,
+    eyebrow: "Emilly Alves",
+    title: config.titulo,
+    subtitle: config.subtitulo,
+    image: heroImage,
+    cta: {
+      label: "Agendar ensaio",
+      href: whatsappLink,
+    },
   },
   portfolio: {
-    eyebrow: "Selecao",
-    title: "Projetos",
+    eyebrow: "Portfolio",
+    title: "Imagens que fazem sua marca ser lembrada.",
     description:
-      "Uma curadoria de trabalhos em fotografia, video e direcao criativa para projetos editoriais, campanhas e narrativas visuais.",
+      "Uma curadoria visual criada para despertar desejo, transmitir autoridade e valorizar cada detalhe do seu projeto.",
     items: [
-      { id: "1", title: "Serie Luz", category: "Fotografia", src: fallback, aspect: "portrait" },
-      { id: "2", title: "Editorial Ambar", category: "Direcao Criativa", src: fallback, aspect: "portrait" },
-      { id: "3", title: "Narrativa", category: "Video", src: fallback, aspect: "landscape" },
-      { id: "4", title: "Campos Dourados", category: "Fotografia", src: fallback, aspect: "portrait" },
-      { id: "5", title: "Colecao Terra", category: "Direcao Criativa", src: fallback, aspect: "portrait" },
-      { id: "6", title: "Eclipse", category: "Video", src: fallback, aspect: "landscape" },
-    ] as PortfolioItem[],
+      { id: "p1", title: "Editorial em luz natural", category: "Fotografia", src: portfolio1 },
+      { id: "p2", title: "Campanha com direcao visual", category: "Campanha", src: portfolio2 },
+      { id: "p3", title: "Narrativa para marcas", category: "Conteudo", src: portfolio3 },
+      { id: "p4", title: "Retratos com identidade", category: "Retrato", src: portfolio4 },
+      { id: "p5", title: "Estetica cinematografica", category: "Direcao Criativa", src: portfolio5 },
+      { id: "p6", title: "Imagem que vende", category: "Marca", src: portfolio6 },
+    ],
   },
   about: {
     eyebrow: "Sobre",
-    title: "Imagem, movimento e direcao.",
-    paragraphs: [
-      "Sou Emilly Alves, fotografa, filmmaker e diretora criativa apaixonada por traduzir emocao em linguagem visual. Ha mais de oito anos crio narrativas que cruzam fotografia, cinema e direcao de arte.",
-      "Meu trabalho nasce da escuta para entender a essencia de cada projeto antes de criar. Cada peca e construida com cuidado, do conceito a entrega final, para que o resultado seja autentico, visualmente marcante e atemporal.",
-    ],
-    stats: [
-      { value: "+200", label: "Projetos" },
-      { value: "+80", label: "Marcas" },
-      { value: "8 anos", label: "De estrada" },
-    ],
-    image: fallback,
+    title: "Mais de 8 anos transformando ideias em imagens que conectam e vendem",
+    description:
+      "Cada producao nasce com sensibilidade, direcao e intencao comercial para traduzir a essencia da sua marca em imagens fortes, elegantes e memoraveis.",
+    image: aboutImage,
+    ctaLabel: "Falar com a fotografa",
   },
   services: {
     eyebrow: "Servicos",
-    title: "Como podemos trabalhar juntos",
+    title: "Solucoes visuais pensadas para emocionar, posicionar e converter.",
     items: [
       {
         id: "fotografia",
         title: "Fotografia",
-        description:
-          "Ensaios autorais, editoriais, campanhas publicitarias e coberturas com olhar cinematografico e direcao de arte integrada.",
+        description: "Ensaios, editoriais e campanhas com direcao sensivel e acabamento premium.",
       },
       {
-        id: "audiovisual",
-        title: "Producao Audiovisual",
-        description:
-          "Filmes e videos com narrativa cinematografica, roteiro, captacao, direcao e pos-producao para projetos criativos e comerciais.",
-      },
-      {
-        id: "institucionais",
-        title: "Filmes Institucionais",
-        description:
-          "Videos corporativos e institucionais com linguagem visual refinada, da concepcao narrativa a entrega final.",
-      },
-      {
-        id: "marcas",
-        title: "Conteudo para Marcas",
-        description:
-          "Campanhas publicitarias, conteudo para redes sociais e filmes de marca com direcao criativa e identidade visual forte.",
+        id: "video",
+        title: "Video",
+        description: "Producoes audiovisuais com ritmo, atmosfera e narrativa cinematografica.",
       },
       {
         id: "direcao",
         title: "Direcao Criativa",
-        description:
-          "Concepcao visual, moodboards, direcao de arte e consultoria criativa para campanhas, producoes e marcas.",
+        description: "Conceito, linguagem visual e coerencia estetica para elevar a percepcao da sua marca.",
       },
       {
-        id: "editorial",
-        title: "Editorial & Comercial",
-        description:
-          "Projetos editoriais e campanhas comerciais que unem storytelling, estetica e estrategia de comunicacao visual.",
+        id: "marcas",
+        title: "Conteudo para marcas",
+        description: "Imagem e video orientados para campanhas, redes sociais e paginas de conversao.",
       },
-    ] as Service[],
+    ],
+    ctaLabel: "Quero um orcamento",
   },
   ctaFinal: {
-    eyebrow: "Vamos criar juntos",
-    title: "Cada historia merece ser contada com arte e direcao.",
+    eyebrow: "CTA Final",
+    title: "Vamos criar algo unico para sua marca?",
     description:
-      "Agendas limitadas por mes para garantir dedicacao a cada projeto. Entre em contato para conversarmos sobre a sua ideia.",
-    cta: { label: "Iniciar projeto", href: "#contato" },
-  },
-  contact: {
-    eyebrow: "Contato",
-    title: "Vamos conversar",
-    description:
-      "Conte um pouco sobre o seu projeto. Respondo pessoalmente em ate 24 horas.",
-    whatsapp: {
-      label: "Chamar no WhatsApp",
-      number: "+55 11 99999-9999",
-      href: "https://wa.me/5511999999999",
+      "Se voce busca imagens que valorizam sua historia e ajudam sua marca a vender melhor, vamos conversar.",
+    cta: {
+      label: "Falar com a fotografa",
+      href: whatsappLink,
     },
-    email: "contato@emillyalves.com",
-    location: "Sao Paulo, Brasil",
   },
 };
 
